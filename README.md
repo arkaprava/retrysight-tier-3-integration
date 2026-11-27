@@ -1,0 +1,123 @@
+# RetrySight Integration
+
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/arkaprava/retrysight-tier-3-integration?sort=semver)](https://github.com/arkaprava/retrysight-tier-3-integration/releases)
+
+**See every retry. Know every dollar.** RetrySight is self-hosted observability for AI coding agents
+(Cursor, Claude Code, Codex and more): tasks, retries, tokens and cost across your whole fleet.
+
+Integration tier: Analytics **plus** MCP, SSO tools API, contract cost apply, git query, ClickHouse analytics, traces, patterns, and eval experiments.
+
+Installation tier `TIER_3_INTEGRATION` · Spring profile `docker,tier-integration` · [retrysight.com](https://retrysight.com)
+
+## The RetrySight lineup
+
+Each tier is a standalone, self-contained repository. Higher tiers include everything below them.
+
+| Tier | Repository | Adds |
+|------|------------|------|
+| Core | [`retrysight-tier-1-core`](https://github.com/arkaprava/retrysight-tier-1-core) | Ingest, dashboard, tasks, live feed, collector registry, retention |
+| Analytics | [`retrysight-tier-2-analytics`](https://github.com/arkaprava/retrysight-tier-2-analytics) | + cost analytics, reports, evaluations, extended collectors, git context |
+| **Integration** | [`retrysight-tier-3-integration`](https://github.com/arkaprava/retrysight-tier-3-integration) | + MCP server, SSO tools API, ClickHouse analytics, traces, patterns |
+| Cloud | [`retrysight-tier-4-cloud`](https://github.com/arkaprava/retrysight-tier-4-cloud) | + push ingest, S3/MinIO archive, cold restore, git enterprise privacy |
+
+Looking for a single-user desktop console? See [RetrySight Lite](https://github.com/arkaprava/retrysight-lite).
+
+## Install
+
+### Docker Compose (prebuilt images)
+
+```bash
+curl -fsSL https://app.retrysight.com/enterprise/tier-integration/latest/docker-compose.yml -o docker-compose.yml
+docker compose up -d
+```
+
+Dashboard: http://localhost:8084 · Manager API: http://localhost:28475
+
+Multi-arch images (amd64, arm64) are published to GHCR (`docker pull ghcr.io/arkaprava/retrysight-tier-3-integration/manager:1.0.0`), and as
+`docker save` tarballs on the [releases page](https://github.com/arkaprava/retrysight-tier-3-integration/releases) and at
+`https://app.retrysight.com/enterprise/tier-integration/latest/` for air-gapped installs (`docker load -i retrysight-manager-1.0.0-linux-amd64.tar.gz`; arm64 tarballs too).
+
+### Kubernetes (Helm)
+
+```bash
+curl -fsSLO https://app.retrysight.com/enterprise/tier-integration/latest/retrysight-1.0.0.tgz
+helm upgrade --install retrysight ./retrysight-1.0.0.tgz -n retrysight --create-namespace
+```
+
+The chart generates the database password, JWT secret, admin password and agent API key on first
+install and keeps them across upgrades. `helm status retrysight -n retrysight` prints how to read them.
+See [`docs/RELEASE.md`](docs/RELEASE.md) for values and ingress options.
+
+### Collector agent
+
+Native installers (Windows `.msi`, macOS `.pkg`, Linux `.deb`) and the agent jar are attached to each
+[release](https://github.com/arkaprava/retrysight-tier-3-integration/releases).
+
+## Build from source
+
+### Components
+
+| Component | Image / process | Database |
+|-----------|-----------------|----------|
+| PostgreSQL 16 | `retrysight/tier-integration-postgres:local` | OLTP |
+| ClickHouse 24 | `clickhouse/clickhouse-server:24.8-alpine` | Analytics warehouse |
+| Manager / Frontend / Agent | `retrysight/tier-integration-*:local` | — |
+| MCP server | Host process — [`mcp/README.md`](mcp/README.md) | — |
+
+### Quick start
+
+From the **repository root**:
+
+```bash
+cp .env.example .env
+./scripts/build.sh
+./scripts/up-with-agent.sh
+```
+
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:8084 |
+| Manager API | http://localhost:28475 |
+| PostgreSQL | localhost:5434 |
+| ClickHouse HTTP | http://localhost:8124 |
+
+### MCP (host)
+
+```bash
+cd mcp && npm ci && npm run build
+MANAGER_URL=http://localhost:28475 npm run start
+```
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and [`mcp/README.md`](mcp/README.md).
+
+### Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/RELEASE.md`](docs/RELEASE.md) | CI, Helm (with ClickHouse), native agents |
+| [`docs/CLICKHOUSE_ANALYTICS.md`](docs/CLICKHOUSE_ANALYTICS.md) | Warehouse ops |
+
+## Repository layout
+
+| Path | Purpose |
+|------|---------|
+| `manager/manager-app` | Spring Boot manager (GraphQL + ingest REST) |
+| `agent/agent-app` | Collector agent (Windows, macOS, Linux) |
+| `ui/manager-dashboard` | React dashboard |
+| `shared/agent-contract` | Shared ingest DTOs |
+| `mcp/` | MCP server (host process) |
+| `helm/retrysight/` | Kubernetes Helm chart |
+| `infra/`, `docker/` | Dockerfiles, PostgreSQL image and init scripts |
+| `config/agent/` | Collector + fleet config examples |
+| `scripts/` | Build, run, packaging and validation helpers |
+| `docs/` | Documentation |
+
+## Contributing
+
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Please report security issues privately as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE). Copyright © 2026 Arka Prava Ghosh.
